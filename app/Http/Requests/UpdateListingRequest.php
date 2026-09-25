@@ -8,6 +8,7 @@ class UpdateListingRequest extends StoreListingRequest
     {
         return array_map(function (array $rules): array {
             array_unshift($rules, 'sometimes');
+
             return $rules;
         }, parent::rules());
     }
