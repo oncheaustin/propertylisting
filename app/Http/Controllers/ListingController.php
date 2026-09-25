@@ -75,10 +75,6 @@ class ListingController extends Controller
                 '((latitude - ?) * (latitude - ?) + (longitude - ?) * (longitude - ?)) <= ?',
                 [$latitude, $latitude, $longitude, $longitude, ($radius / 111) ** 2]
             );
-            $query->select('*')->selectRaw(
-                'sqrt(((latitude - ?) * (latitude - ?) + (longitude - ?) * (longitude - ?))) * 111 as distance_km',
-                [$latitude, $latitude, $longitude, $longitude]
-            );
 
             return;
         }

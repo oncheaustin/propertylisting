@@ -1,26 +1,128 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Property Listings API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A small REST API for managing property listings, built with Laravel 12 and MySQL.
 
-## About Laravel
+## Requirements
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.2+
+- Composer
+- MySQL 8.0+ (or MariaDB with compatible spatial/math functions)
+- PHP PDO MySQL extension
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Setup
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. Install dependencies:
 
+	```bash
+	composer install
+	```
+
+2. Create the environment file and application key:
+
+	```bash
+	copy .env.example .env
+	php artisan key:generate
+	```
+
+3. Create a MySQL database, then set these values in `.env`:
+
+	```dotenv
+	DB_CONNECTION=mysql
+	DB_HOST=127.0.0.1
+	DB_PORT=3306
+	DB_DATABASE=propertylisting
+	DB_USERNAME=root
+	DB_PASSWORD=
+	```
+
+4. Run migrations:
+
+	```bash
+	php artisan migrate
+	```
+
+5. Start the local API:
+
+	```bash
+	php artisan serve
+	```
+
+The API is available at `http://127.0.0.1:8000/api`.
+
+## API endpoints
+
+All request and response bodies are JSON. Validation errors return HTTP `422` with Laravel's standard `message` and `errors` fields. Missing listings return HTTP `404`.
+
+| Method | URI | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/listings` | Paginated listings (`per_page` 1-100) |
+| `POST` | `/api/listings` | Create a listing |
+| `GET` | `/api/listings/{id}` | Get one listing |
+| `PATCH` | `/api/listings/{id}` | Update a listing partially |
+| `DELETE` | `/api/listings/{id}` | Delete a listing; returns `204` |
+| `GET` | `/api/listings/search` | Filter and search listings |
+
+Create/update fields:
+
+```json
+{
+  "title": "Modern two-bedroom apartment",
+  "price": 250000,
+  "type": "rent",
+  "bedrooms": 2,
+  "location": "Victoria Island, Lagos",
+  "latitude": 6.4281,
+  "longitude": 3.4219,
+  "agent_id": 1
+}
+```
+
+`type` must be `rent`, `sale`, or `shortlet`. Coordinates are validated against their geographic bounds, and `agent_id` must reference an existing user.
+
+### Search
+
+Search accepts any combination of:
+
+- `type=rent|sale|shortlet`
+- `min_price` and `max_price`
+- `bedrooms`
+- `latitude`, `longitude`, and `radius_km` together
+- `per_page` (default `15`, maximum `100`)
+
+Example:
+
+```text
+GET /api/listings/search?type=rent&min_price=100000&max_price=500000&bedrooms=2&latitude=6.4281&longitude=3.4219&radius_km=10&per_page=20
+```
+
+Radius searches use the Haversine formula in MySQL and return nearest listings first. The response follows Laravel's paginator format with `data`, `links`, and `meta`; each listing includes its address, coordinates, and agent ID.
+
+## Design choices
+
+- Form Request classes keep validation separate from controller actions and make create, update, and search rules explicit.
+- Eloquent model binding gives consistent `404` behavior for missing listing IDs.
+- `ListingResource` provides a stable public response shape and avoids exposing database details directly.
+- Database indexes cover common filters (`type`/`price`, `bedrooms`/`price`, and coordinates).
+- MySQL performs the geospatial calculation in SQL so filtering and pagination happen in the database. SQLite is used by the automated tests and uses a portable coordinate-distance approximation for the radius predicate.
+- Agents use the existing Laravel `users` table, with a foreign key preventing orphaned listings.
+
+## Testing
+
+Tests use SQLite in-memory and can be run with:
+
+```bash
+php artisan test
+```
+
+The feature suite covers creation, validation failures, combined search filters, radius filtering, pagination metadata, update, and deletion.
+
+## What I would improve with more time
+
+- Add authentication and authorization so agents can only manage their own listings.
+- Add an explicit API version (`/api/v1`) and OpenAPI documentation.
+- Use a spatial `POINT` column and a spatial index for larger datasets and more efficient geographic queries.
+- Add rate limiting, structured request IDs, production logging, and CI checks.
+- Add soft deletes, image/media storage, richer location normalization, and contract tests for MySQL specifically.
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
