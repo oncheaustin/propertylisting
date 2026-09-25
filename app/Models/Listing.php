@@ -5,10 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
+use Database\Factories\ListingFactory;
 
 class Listing extends Model
 {
     use HasFactory;
+
+    protected static function newFactory(): ListingFactory
+    {
+        return ListingFactory::new();
+    }
 
     protected $fillable = [
         'title',

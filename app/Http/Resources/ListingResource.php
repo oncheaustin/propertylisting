@@ -21,7 +21,7 @@ class ListingResource extends JsonResource
                 'longitude' => (float) $this->longitude,
             ],
             'agent_id' => $this->agent_id,
-            'distance_km' => $this->when(isset($this->distance_km), fn () => round((float) $this->distance_km, 2)),
+            'distance_km' => $this->when($this->resource->getAttribute('distance_km') !== null, fn () => round((float) $this->distance_km, 2)),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
